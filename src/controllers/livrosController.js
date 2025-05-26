@@ -39,9 +39,9 @@ class LivroController {
   static atualizarLivro = async (req, res, next) => {
     try {
       const id = req.params.id;
-      const livroResultado = await livros.findByIdAndUpdate(id, {$set: req.body});
+      const livroResultado = await livros.findByIdAndUpdate(id, { $set: req.body });
       if (livroResultado !== null) {
-        res.status(200).send({message: "Livro atualizado com sucesso"});
+        res.status(200).send({ message: "Livro atualizado com sucesso" });
       } else {
         next(new NaoEncontrado("Id do Livro nao localizado"));
       }
@@ -55,7 +55,7 @@ class LivroController {
       const id = req.params.id;
       const livroResultado = await livros.findByIdAndDelete(id);
       if (livroResultado !== null) {
-        res.status(200).send({message: "Livro removido com sucesso"});
+        res.status(200).send({ message: "Livro removido com sucesso" });
       } else {
         next(new NaoEncontrado("Id do Livro nao localizado"));
       }
@@ -64,10 +64,12 @@ class LivroController {
     }
   };
 
-  static listarLivroPorEditora = async (req, res, next) => {
+  static listarLivroPorFiltro = async (req, res, next) => {
     try {
-      const editora = req.query.editora;
-      const livrosResultado = await livros.find({"editora": editora});
+      const busca = processaBusca(req.query);
+
+      const livrosResultado = await livros.find(busca);
+
       res.status(200).send(livrosResultado);
     } catch (error) {
       next(error);
@@ -76,4 +78,22 @@ class LivroController {
 
 }
 
+function processaBusca(parametros) {
+  const { editora, titulo, minPaginas, maxPaginas } = parametros;
+
+  const busca = {};
+
+  if (editora) busca.editora = editora;
+  if (titulo) busca.titulo = { $regex: titulo, $options: "i" };
+
+  // Verifica se minPaginas e maxPaginas são números válidos
+  if (minPaginas || maxPaginas) busca.numeroPaginas = {};
+
+  // $gte = Greater Than or Equal = Maior ou Igual
+  if (minPaginas) busca.numeroPaginas.$gte = minPaginas;
+  // $lte = Less Than or Equal = Menor ou Igual
+  if (maxPaginas) busca.numeroPaginas.$lte = maxPaginas;
+
+  return busca;
+}
 export default LivroController;
